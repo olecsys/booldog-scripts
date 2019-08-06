@@ -1,0 +1,10 @@
+ms-vscode.cpptools
+twxs.cmake
+ms-azuretools.vscode-docker
+gaborv.flatbuffers
+eamodio.gitlens
+toasty-technologies.octave
+rebornix.project-snippets
+ms-python.python
+bbenoist.qml
+rogalmic.bash-debug

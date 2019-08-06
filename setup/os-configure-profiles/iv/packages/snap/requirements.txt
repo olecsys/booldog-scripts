@@ -1,0 +1,7 @@
+docker
+opera
+skype --classic
+slack --classic
+remmina
+code --classic
+cmake --classic
