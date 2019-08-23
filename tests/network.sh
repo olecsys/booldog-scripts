@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 function test_network_download_file() {
   local __url=${1}
@@ -36,7 +36,7 @@ function test_network_get_data() {
   local __backend=${3}
 
   local __funcerror=
-  __funcerror=$(network_get_data ${__url} 1 ${__backend}) || {
+  __funcerror=$(network_get_data ${__url} 1 ${__backend} 2>&1) || {
     >&2 echo -e "${__funcerror}";
     return 1;
   }
@@ -102,7 +102,7 @@ function main() {
     local __output0=
     __output0=$(test_network_get_data ${__url} \
       1 \
-      "curl") || {
+      "curl" 2>&1) || {
       __funcerror="${__output0}"
       break
     }
@@ -110,7 +110,7 @@ function main() {
     local __output1=
     __output1=$(test_network_get_data ${__url} \
       1 \
-      "wget") || {
+      "wget" 2>&1) || {
       __funcerror="${__output1}"
       break
     }
