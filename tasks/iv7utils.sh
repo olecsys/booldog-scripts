@@ -67,8 +67,9 @@ Usage: '${nocolorbold}${__script_name}${nocolor}' '${__command}' [OPTIONS]
 Make difference between 2 '${nocolorbold}'Integra Video'${nocolor}' mems files
 
 Options:
-  -p, --current            string    Current '${nocolorbold}'Integra Video mems'${nocolor}' file
-  -c, --previous           string    Previous '${nocolorbold}'Integra Video mems'${nocolor}' file'
+  -p, --current    string    Current '${nocolorbold}'Integra Video mems'${nocolor}' file
+  -c, --previous   string    Previous '${nocolorbold}'Integra Video mems'${nocolor}' file
+  -k, --key        string    Key '${nocolorbold}'Integra Video mems'${nocolor}' file with additional information'
       ;; 
     *)
       echo -e ${nocolor}'Usage: '${nocolorbold}${__script_name}${nocolor}' COMMAND [OPTIONS]
@@ -92,7 +93,7 @@ function mems_diff() {
 
   local -a __args=("${!1}")
 
-  local i __previous= __current=
+  local i __previous= __current= __key_filename=
   for ((i=1; i<${#__args[@]}; i++))
   do
     case ${__args[i]} in
@@ -106,6 +107,11 @@ function mems_diff() {
         [ ${i} -eq ${#__args[@]} ] && break
         __previous=${__args[i]}
         ;;
+      --key|-k)
+        i=$(expr $i + 1)
+        [ ${i} -eq ${#__args[@]} ] && break
+        __key_filename=${__args[i]}
+        ;;
       *)
         >&2 echo -e ${nocolor}'unknown flag: '${__args[i]}'
 See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
@@ -115,16 +121,120 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
   done
   [ -z "${__current}" ] && {
     >&2 echo -e ${nocolor}'cannot find required option: '${nocolorbold}'-c|--current'${nocolor}'
+
 See `'${nocolorbold}${__script_name}${nocolor}' help diff`.';
     return 1;
   }
   [ -z "${__previous}" ] && {
-    >&2 echo -e ${nocolor}'cannot find required option: '${nocolorbold}'-p|--previous'${nocolor}'
+    >&2 echo -e ${nocolor}'
+cannot find required option: '${nocolorbold}'-p|--previous'${nocolor}'
+
 See `'${nocolorbold}${__script_name}${nocolor}' help diff`.';
     return 1;
-  }  
+  }
+  [ -f "${__current}" ] || {
+    >&2 echo -e ${nocolor}'
+cannot find '${nocolorbold}${__current}${nocolor}' that is passed through required option: '${nocolorbold}'-c|--current'${nocolor}'
 
+See `'${nocolorbold}${__script_name}${nocolor}' help diff`.';
+    return 1;
+  }
+  [ -f "${__previous}" ] || {
+    >&2 echo -e ${nocolor}'
+cannot find '${nocolorbold}${__previous}${nocolor}' that is passed through required option: '${nocolorbold}'-p|--previous'${nocolor}'
+
+See `'${nocolorbold}${__script_name}${nocolor}' help diff`.';
+    return 1;
+  }
+
+  local __processed_current=$(grep '^[\[0-9]\+].*' "${__current}"\
+    |sed 's/^\(\[[0-9]\+\]\)\s\+cnt=\([0-9]\+\)\s\+sz=\([0-9]\+\)/\1 \2 \3/'\
+    |sort -k3 -n -r)
+
+  IFS=$'\n'
+  local __processed_ids=( $(echo "${__processed_current}"\
+    |sed 's/^\[\([0-9]\+\)\].*/\1/') )
   
+  local __processed_cnts=( $(echo "${__processed_current}"\
+    |sed 's/^.*\s\+\([0-9]\+\)\s\+\([0-9]\+\).*/\1/') )
+
+  local __processed_szs=( $(echo "${__processed_current}"\
+    |sed 's/^.*\s\+\([0-9]\+\)\s\+\([0-9]\+\).*/\2/') )
+
+  local __processed_current=( $(grep '^[\[0-9]\+].*' "${__previous}"\
+    |sed 's/^\[\([0-9]\+\)\]\s\+cnt=\([0-9]\+\)\s\+sz=\([0-9]\+\).*/\1;\2;\3/') )  
+
+  IFS=';'
+  local i
+  declare -A local __prev_map
+  for ((i=0; i<${#__processed_current[@]}; i++))
+  do
+    local value=( ${__processed_current[i]} )
+    local key=${value[0]}
+    __prev_map[${key}]="${value[1]};${value[2]}"
+  done
+
+  declare -A local __keys_map
+  if ! [ -z "${__key_filename}" ] && [ -f "${__key_filename}" ]; then
+    IFS=$'\n'
+    local __processed_current=( $(grep '^[\[0-9]\+].*' "${__key_filename}"\
+      |sed 's/^\[\([0-9]\+\)\]\(.*\)/\1=\2/') )
+
+    IFS='='
+    local i
+    for ((i=0; i<${#__processed_current[@]}; i++))
+    do
+      # echo ${__processed_current[i]} 2>&1 >/dev/tty
+
+      local value=( ${__processed_current[i]} )
+      local key=${value[0]}
+      __keys_map[${key}]="${value[1]}"
+
+      # echo ${__keys_map[${key}]} 2>&1 >/dev/tty
+      # break
+    done
+  fi
+
+  IFS=';'
+  for ((i=0; i<${#__processed_ids[@]}; i++))
+  do
+    local __id=${__processed_ids[i]}
+    local __cnt=${__processed_cnts[i]}
+    local __sz=${__processed_szs[i]}
+
+    local __additional_info=''
+    [ ${__keys_map[${__id}]+_} ] && {
+      __additional_info=": ${__keys_map[${__id}]}"
+    }
+
+    [ ${__prev_map[${__id}]+_} ] && {
+      local __value=( ${__prev_map[${__id}]} )
+      local __prev_cnt="${__value[0]}"
+      local __prev_sz=${__value[1]}
+      
+      local __sz_diff=$(($__sz-$__prev_sz))
+      local __cnt_diff=$(($__cnt-$__prev_cnt))
+
+      local __sz_diff_text=''
+      if [ ${__sz_diff} -gt 0 ]; then
+        __sz_diff_text="(+${__sz_diff})"
+      elif [ ${__sz_diff} -lt 0 ]; then
+        __sz_diff_text="(${__sz_diff})"
+      fi
+
+      local __cnt_diff_text=''
+      if [ ${__cnt_diff} -gt 0 ]; then
+        __cnt_diff_text="(+${__cnt_diff})"
+      elif [ ${__cnt_diff} -lt 0 ]; then
+        __cnt_diff_text="(${__cnt_diff})"
+      fi
+
+      echo "[${__id}] cnt=${__cnt}${__cnt_diff_text} sz=${__sz}${__sz_diff_text}${__additional_info}"
+    } || {
+      echo "[${__id}] cnt=${__cnt}(+${__cnt}) sz=${__sz}(+${__sz})${__additional_info}"
+    }
+  done
+  return 0;
 }
 
 function args_parse() {
@@ -199,7 +309,7 @@ function main() {
   local greenbold='\e[1;32m'
   local nocolorbold='\e[1m'
 
-  local __cmd_args=( "$@" )  
+  local __cmd_args=( "$@" )
 
   local __funcmsg=       # set `__funcerror` variable with custom message 
   local __funccanceled=0 # if you want to cancel script set to `1`
@@ -208,7 +318,6 @@ function main() {
   while true
   do  
     __funcmsg=$(args_parse __cmd_args[@] __funccanceled 2>&1) || break
-
     __funcresult=0
     break
   done  
@@ -232,9 +341,7 @@ function main() {
       break
     }   
     
-    [ $__funcresult -eq 0 ] && {
-      echo -e ${greenbold}${__script_name}${green}' is succeeded'${nocolor}
-    } || {        
+    [ $__funcresult -eq 0 ] || {        
       echo -e ${redbold}${__script_name}${red}' is failed'${nocolor} 1>&2
     }
     break
