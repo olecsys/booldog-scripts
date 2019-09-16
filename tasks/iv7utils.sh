@@ -211,9 +211,9 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
   if ! [ -z "${__key_filename}" ] && [ -f "${__key_filename}" ]; then
     IFS=$'\n'
     local __processed_current=( $(grep '^[\[0-9]\+].*' "${__key_filename}"\
-      |sed 's/^\[\([0-9]\+\)\]\(.*\)/\1:\2/') )
+      |sed 's/^\[\([0-9]\+\)\]\(.*\)/\1\&\2/') )
 
-    IFS=':'
+    IFS='&'
     local i
     for ((i=0; i<${#__processed_current[@]}; i++))
     do
