@@ -64,7 +64,7 @@ function usage() {
       echo -e ${nocolor}'
 Usage: '${nocolorbold}${__script_name}${nocolor}' '${__command}' [OPTIONS]
 
-Make difference between 2 '${nocolorbold}'Integra Video'${nocolor}' mems files
+Make difference between two '${nocolorbold}'Integra Video'${nocolor}' mems files
 
 Options:
   -p, --current    string    Current '${nocolorbold}'Integra Video mems'${nocolor}' file
@@ -72,8 +72,14 @@ Options:
   -k, --key        string    Key '${nocolorbold}'Integra Video mems'${nocolor}' file with additional information
   -f, --flags      string    Various flags for the processing two mems files, delimiter is `,`
 Flags:
-  size-increased             Show lines with the increased size
-  count-increased            Show lines with the increased count'  
+  all                        Show all lines
+  size-value-increased       Show lines with the increased value of a size
+  count-value-increased      Show lines with the increased value of a count
+  size-value-decreased       Show lines with the decreased value of a size
+  count-value-decreased      Show lines with the decreased value of a count
+  size-value-unchanged       Show lines with the unchanged value of a size
+  count-value-unchanged      Show lines with the unchanged value of a count
+  sort-by-count              Sort lines by count'
       ;; 
     *)
       echo -e ${nocolor}'Usage: '${nocolorbold}${__script_name}${nocolor}' COMMAND [OPTIONS]
@@ -158,17 +164,41 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.';
   }
 
   local __size_increased= __count_increased=
-  [ -z "${__flags}" ] || {
+  local __size_decreased= __count_decreased=
+  local __size_unchanged= __count_unchanged=
+  local __all=
+  local __sort_by_count=
+  [ -z "${__flags}" ] && {
+    __all='all'
+  } || {
     IFS=','
     local __flags=( ${__flags} )
     for ((i=0; i<${#__flags[@]}; i++))
     do
       case ${__flags[i]} in
-        size-increased)
+        size-value-increased)
           __size_increased="${__flags[i]}"
           ;;
-        count-increased)
+        count-value-increased)
           __count_increased="${__flags[i]}"
+          ;;
+        size-value-decreased)
+          __size_decreased="${__flags[i]}"
+          ;;
+        count-value-decreased)
+          __count_decreased="${__flags[i]}"
+          ;;
+        size-value-unchanged)
+          __size_unchanged="${__flags[i]}"
+          ;;
+        count-value-unchanged)
+          __count_unchanged="${__flags[i]}"
+          ;;
+        sort-by-count)
+          __sort_by_count="${__flags[i]}"
+          ;;
+        all)
+          __all="${__flags[i]}"
           ;;
         *)
           >&2 echo -e ${nocolor}'unknown flag that is passed through option '${nocolorbold}'-f|--flags'${nocolor}': '${__flags[i]}'
@@ -180,9 +210,20 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
     done
   }
 
+  [ -z "${__all}" ] || {
+    __size_increased='size-value-increased' __count_increased='count-value-increased'
+    __size_decreased='size-value-decreased' __count_decreased='count-value-decreased'
+    __size_unchanged='size-value-unchanged' __count_unchanged='count-value-unchanged'
+  }
+
+  local __sort_column='-k3'
+  [ -z "${__sort_by_count}" ] || {
+    __sort_column='-k2'
+  }
+
   local __processed_current=$(grep '^[\[0-9]\+].*' "${__current}"\
     |sed 's/^\(\[[0-9]\+\]\)\s\+cnt=\([0-9]\+\)\s\+sz=\([0-9]\+\)/\1 \2 \3/'\
-    |sort -k3 -n -r)
+    |sort ${__sort_column} -n -r)
 
   IFS=$'\n'
   local __processed_ids=( $(echo "${__processed_current}"\
@@ -246,13 +287,16 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
       local __sz_diff_text=''
       if [ ${__sz_diff} -gt 0 ]; then
         __sz_diff_text="(+${__sz_diff})"
-      elif [ ${__sz_diff} -lt 0 ]; then
-        __sz_diff_text="(${__sz_diff})"
-        [ -z "${__size_increased}" ] || {
+        [ -z "${__size_increased}" ] && {
           continue
         }
+      elif [ ${__sz_diff} -lt 0 ]; then
+        __sz_diff_text="(${__sz_diff})"
+        [ -z "${__size_decreased}" ] && {
+          continue
+        }        
       else
-        [ -z "${__size_increased}" ] || {
+        [ -z "${__size_unchanged}" ] && {
           continue
         }
       fi
@@ -260,13 +304,16 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
       local __cnt_diff_text=''
       if [ ${__cnt_diff} -gt 0 ]; then
         __cnt_diff_text="(+${__cnt_diff})"
+        [ -z "${__count_increased}" ] && {
+          continue
+        }
       elif [ ${__cnt_diff} -lt 0 ]; then
         __cnt_diff_text="(${__cnt_diff})"
-        [ -z "${__count_increased}" ] || {
+        [ -z "${__count_decreased}" ] && {
           continue
         }
       else
-        [ -z "${__count_increased}" ] || {
+        [ -z "${__count_unchanged}" ] && {
           continue
         }
       fi
