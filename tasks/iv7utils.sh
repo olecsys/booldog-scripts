@@ -69,7 +69,10 @@ Make difference between 2 '${nocolorbold}'Integra Video'${nocolor}' mems files
 Options:
   -p, --current    string    Current '${nocolorbold}'Integra Video mems'${nocolor}' file
   -c, --previous   string    Previous '${nocolorbold}'Integra Video mems'${nocolor}' file
-  -k, --key        string    Key '${nocolorbold}'Integra Video mems'${nocolor}' file with additional information'
+  -k, --key        string    Key '${nocolorbold}'Integra Video mems'${nocolor}' file with additional information
+  -f, --flags      string    Various flags for the processing two mems files, delimiter is `,`
+Flags:
+  only-increased             Show only lines with the increased size'
       ;; 
     *)
       echo -e ${nocolor}'Usage: '${nocolorbold}${__script_name}${nocolor}' COMMAND [OPTIONS]
@@ -93,7 +96,7 @@ function mems_diff() {
 
   local -a __args=("${!1}")
 
-  local i __previous= __current= __key_filename=
+  local i __previous= __current= __key_filename= __flags=
   for ((i=1; i<${#__args[@]}; i++))
   do
     case ${__args[i]} in
@@ -112,8 +115,14 @@ function mems_diff() {
         [ ${i} -eq ${#__args[@]} ] && break
         __key_filename=${__args[i]}
         ;;
+      --flags|-f)
+        i=$(expr $i + 1)
+        [ ${i} -eq ${#__args[@]} ] && break
+        __flags=${__args[i]}
+        ;;
       *)
         >&2 echo -e ${nocolor}'unknown flag: '${__args[i]}'
+
 See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
         return 1
         ;;
@@ -145,6 +154,26 @@ cannot find '${nocolorbold}${__previous}${nocolor}' that is passed through requi
 
 See `'${nocolorbold}${__script_name}${nocolor}' help diff`.';
     return 1;
+  }
+
+  local __only_increased=
+  [ -z "${__flags}" ] || {
+    IFS=','
+    local __flags=( ${__flags} )
+    for ((i=0; i<${#__flags[@]}; i++))
+    do
+      case ${__flags[i]} in
+        only-increased)
+          __only_increased="${__flags[i]}"
+          ;;
+        *)
+          >&2 echo -e ${nocolor}'unknown flag that is passed through option '${nocolorbold}'-f|--flags'${nocolor}': '${__flags[i]}'
+
+See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
+          return 1
+          ;;
+      esac
+    done
   }
 
   local __processed_current=$(grep '^[\[0-9]\+].*' "${__current}"\
@@ -227,6 +256,13 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.';
         __cnt_diff_text="(+${__cnt_diff})"
       elif [ ${__cnt_diff} -lt 0 ]; then
         __cnt_diff_text="(${__cnt_diff})"
+        [ -z "${__only_increased}" ] || {
+          continue
+        }
+      else
+        [ -z "${__only_increased}" ] || {
+          continue
+        }
       fi
 
       echo "[${__id}] cnt=${__cnt}${__cnt_diff_text} sz=${__sz}${__sz_diff_text}${__additional_info}"
