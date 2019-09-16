@@ -72,7 +72,8 @@ Options:
   -k, --key        string    Key '${nocolorbold}'Integra Video mems'${nocolor}' file with additional information
   -f, --flags      string    Various flags for the processing two mems files, delimiter is `,`
 Flags:
-  only-increased             Show only lines with the increased size'
+  size-increased             Show lines with the increased size
+  count-increased            Show lines with the increased count'  
       ;; 
     *)
       echo -e ${nocolor}'Usage: '${nocolorbold}${__script_name}${nocolor}' COMMAND [OPTIONS]
@@ -156,15 +157,18 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.';
     return 1;
   }
 
-  local __only_increased=
+  local __size_increased= __count_increased=
   [ -z "${__flags}" ] || {
     IFS=','
     local __flags=( ${__flags} )
     for ((i=0; i<${#__flags[@]}; i++))
     do
       case ${__flags[i]} in
-        only-increased)
-          __only_increased="${__flags[i]}"
+        size-increased)
+          __size_increased="${__flags[i]}"
+          ;;
+        count-increased)
+          __count_increased="${__flags[i]}"
           ;;
         *)
           >&2 echo -e ${nocolor}'unknown flag that is passed through option '${nocolorbold}'-f|--flags'${nocolor}': '${__flags[i]}'
@@ -213,14 +217,9 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
     local i
     for ((i=0; i<${#__processed_current[@]}; i++))
     do
-      # echo ${__processed_current[i]} 2>&1 >/dev/tty
-
       local value=( ${__processed_current[i]} )
       local key=${value[0]}
       __keys_map[${key}]="${value[1]}"
-
-      # echo ${__keys_map[${key}]} 2>&1 >/dev/tty
-      # break
     done
   fi
 
@@ -249,6 +248,13 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
         __sz_diff_text="(+${__sz_diff})"
       elif [ ${__sz_diff} -lt 0 ]; then
         __sz_diff_text="(${__sz_diff})"
+        [ -z "${__size_increased}" ] || {
+          continue
+        }
+      else
+        [ -z "${__size_increased}" ] || {
+          continue
+        }
       fi
 
       local __cnt_diff_text=''
@@ -256,11 +262,11 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
         __cnt_diff_text="(+${__cnt_diff})"
       elif [ ${__cnt_diff} -lt 0 ]; then
         __cnt_diff_text="(${__cnt_diff})"
-        [ -z "${__only_increased}" ] || {
+        [ -z "${__count_increased}" ] || {
           continue
         }
       else
-        [ -z "${__only_increased}" ] || {
+        [ -z "${__count_increased}" ] || {
           continue
         }
       fi
