@@ -275,52 +275,58 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
     [ ${__keys_map[${__id}]+_} ] && {
       __additional_info=": ${__keys_map[${__id}]}"
     }
-
+    
+    local __prev_cnt=0 __prev_sz=0
     [ ${__prev_map[${__id}]+_} ] && {
       local __value=( ${__prev_map[${__id}]} )
       local __prev_cnt="${__value[0]}"
       local __prev_sz=${__value[1]}
-      
-      local __sz_diff=$(($__sz-$__prev_sz))
-      local __cnt_diff=$(($__cnt-$__prev_cnt))
-
-      local __sz_diff_text=''
-      if [ ${__sz_diff} -gt 0 ]; then
-        __sz_diff_text="(+${__sz_diff})"
-        [ -z "${__size_increased}" ] && {
-          continue
-        }
-      elif [ ${__sz_diff} -lt 0 ]; then
-        __sz_diff_text="(${__sz_diff})"
-        [ -z "${__size_decreased}" ] && {
-          continue
-        }        
-      else
-        [ -z "${__size_unchanged}" ] && {
-          continue
-        }
-      fi
-
-      local __cnt_diff_text=''
-      if [ ${__cnt_diff} -gt 0 ]; then
-        __cnt_diff_text="(+${__cnt_diff})"
-        [ -z "${__count_increased}" ] && {
-          continue
-        }
-      elif [ ${__cnt_diff} -lt 0 ]; then
-        __cnt_diff_text="(${__cnt_diff})"
-        [ -z "${__count_decreased}" ] && {
-          continue
-        }
-      else
-        [ -z "${__count_unchanged}" ] && {
-          continue
-        }
-      fi
-      echo "[${__id}] cnt=${__cnt}${__cnt_diff_text} sz=${__sz}${__sz_diff_text}${__additional_info}"
-    } || {
-      echo "[${__id}] cnt=${__cnt}(+${__cnt}) sz=${__sz}(+${__sz})${__additional_info}"
     }
+
+    local __sz_diff_text=''
+    local __cnt_diff_text=''
+    local __sz_diff=
+    local __cnt_diff=
+    __sz_diff=$(($__sz-$__prev_sz))
+    __cnt_diff=$(($__cnt-$__prev_cnt))
+
+    local __skip=1
+    if [ ${__sz_diff} -gt 0 ]; then
+      __sz_diff_text="(+${__sz_diff})"
+      [ -z "${__size_increased}" ] || {
+        __skip=0
+      }
+    elif [ ${__sz_diff} -lt 0 ]; then
+      __sz_diff_text="(${__sz_diff})"
+      [ -z "${__size_decreased}" ] || {
+        __skip=0
+      }
+    else
+      [ -z "${__size_unchanged}" ] || {
+        __skip=0
+      }
+    fi
+    
+    if [ ${__cnt_diff} -gt 0 ]; then
+      __cnt_diff_text="(+${__cnt_diff})"
+      [ -z "${__count_increased}" ] || {
+        __skip=0
+      }
+    elif [ ${__cnt_diff} -lt 0 ]; then
+      __cnt_diff_text="(${__cnt_diff})"
+      [ -z "${__count_decreased}" ] || {
+        __skip=0
+      }
+    else
+      [ -z "${__count_unchanged}" ] || {
+        __skip=0
+      }
+    fi
+    if [ ${__skip} -eq 1 ]; then
+      continue
+    fi
+
+    echo "[${__id}] cnt=${__cnt}${__cnt_diff_text} sz=${__sz}${__sz_diff_text}${__additional_info}"
   done
   return 0;
 }
