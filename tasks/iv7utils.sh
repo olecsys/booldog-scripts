@@ -250,47 +250,48 @@ See `'${nocolorbold}${__script_name}${nocolor}' help diff`.'
 
   declare -A local __keys_map
   if ! [ -z "${__key_filename}" ] && [ -f "${__key_filename}" ]; then
-    IFS=$'\n'
-    local __processed_current=( $(grep '^[\[0-9]\+].*' "${__key_filename}"\
-      |sed 's/^\[\([0-9]\+\)\]\(.*\)/\1\&\2/') )
+    local __processed_current=
+    mapfile -t __processed_current < "${__key_filename}"
 
-    IFS='&'
-    local i
-    for ((i=0; i<${#__processed_current[@]}; i++))
+    IFS=']'
+    local i= __value= __key=
+    for i in "${__processed_current[@]}"
     do
-      local value=( ${__processed_current[i]} )
-      local key=${value[0]}
-      __keys_map[${key}]="${value[1]}"
+      __value=( ${i} )
+      __key=${__value[0]:1}
+      __keys_map[${__key}]="${__value[1]}"
     done
   fi
 
   IFS=';'
-  for ((i=0; i<${#__processed_ids[@]}; i++))
+  local i= __id= __cnt= __sz= __additional_info= __prev_cnt= __prev_sz=
+  local __sz_diff_text= __cnt_diff_text= __sz_diff= __cnt_diff= __skip=
+  for ((i=0; i<${#__processed_ids[@]}; ++i))
   do
-    local __id=${__processed_ids[i]}
-    local __cnt=${__processed_cnts[i]}
-    local __sz=${__processed_szs[i]}
+    __id=${__processed_ids[i]}
+    __cnt=${__processed_cnts[i]}
+    __sz=${__processed_szs[i]}
 
-    local __additional_info=''
+    __additional_info=''
     [ ${__keys_map[${__id}]+_} ] && {
       __additional_info=": ${__keys_map[${__id}]}"
     }
     
-    local __prev_cnt=0 __prev_sz=0
+    __prev_cnt=0 __prev_sz=0
     [ ${__prev_map[${__id}]+_} ] && {
-      local __value=( ${__prev_map[${__id}]} )
-      local __prev_cnt="${__value[0]}"
-      local __prev_sz=${__value[1]}
+      __value=( ${__prev_map[${__id}]} )
+      __prev_cnt="${__value[0]}"
+      __prev_sz=${__value[1]}
     }
 
-    local __sz_diff_text=''
-    local __cnt_diff_text=''
-    local __sz_diff=
-    local __cnt_diff=
+    __sz_diff_text=''
+    __cnt_diff_text=''
+    __sz_diff=
+    __cnt_diff=
     __sz_diff=$(($__sz-$__prev_sz))
     __cnt_diff=$(($__cnt-$__prev_cnt))
 
-    local __skip=1
+    __skip=1
     if [ ${__sz_diff} -gt 0 ]; then
       __sz_diff_text="(+${__sz_diff})"
       [ -z "${__size_increased}" ] || {
