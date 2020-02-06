@@ -8,3 +8,4 @@ rebornix.project-snippets
 ms-python.python
 bbenoist.qml
 rogalmic.bash-debug
+augustocdias.tasks-shell-input
