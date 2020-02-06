@@ -1,0 +1,30 @@
+{
+// See https://go.microsoft.com/fwlink/?LinkId=733558
+// for the documentation about the tasks.json format
+"version": "2.0.0",
+   "tasks":[
+    {
+      "label": "Install/Update booldog-scripts",
+      "type": "shell",
+      "options": {
+        "env": {}
+      },
+      "command": "chmod +x \"${workspaceRoot}/.vscode/apply.sh\" && \"${workspaceRoot}/.vscode/apply.sh\"",
+      "args": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+   ],"inputs": [
+     {
+       "id":"pickProject",
+       "type": "command",
+       "command": "shellCommand.execute",
+       "args":{
+         "command":"projects=$(find \"$HOME/sources/epiphan/trunk/vga2web/subsys/\" -mindepth 1 -maxdepth 1 -type d -printf \"%f\\n\") && projects=$projects$(find \"$HOME/sources/epiphan/trunk/vga2web/src\" -mindepth 1 -maxdepth 1 -type d -printf \"%f\\n\") && (echo -e $projects|sort)"
+       }
+     }
+   ]
+}
