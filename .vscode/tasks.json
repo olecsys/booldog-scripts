@@ -1,8 +1,8 @@
 {
-// See https://go.microsoft.com/fwlink/?LinkId=733558
-// for the documentation about the tasks.json format
-"version": "2.0.0",
-   "tasks":[
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
     {
       "label": "Install/Update booldog-scripts",
       "type": "shell",
@@ -10,21 +10,208 @@
         "env": {}
       },
       "command": "chmod +x \"${workspaceRoot}/.vscode/apply.sh\" && \"${workspaceRoot}/.vscode/apply.sh\"",
+      // "command": "echo \"${input:pickProject}\"",
       "args": [],
       "group": {
         "kind": "build",
         "isDefault": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Test epi switch",
+      "type": "shell",
+      "options": {
+        "env": {}
+      },
+      "command": "\"${workspaceRoot}/tasks/epi/tasks.sh\"",
+      "args": [
+        "switch",
+        "-p",
+        "${input:pickEpiPkg}",
+        "-t",
+        "/home/olecsys/sources/epiphan/trunk"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test epi build by package name",
+      "type": "shell",
+      "options": {
+        "env": {}
+      },
+      "command": "\"${workspaceRoot}/tasks/epi/tasks.sh\"",
+      "args": [
+        "build",
+        "-p",
+        "${input:pickEpiPkg}"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test epi build by directory",
+      "type": "shell",
+      "options": {
+        "env": {}
+      },
+      "command": "\"${workspaceRoot}/tasks/epi/tasks.sh\"",
+      "args": [
+        "build",
+        "--pkg-source-dir",
+        "${workspaceFolder}/../../epiphan/trunk/vga2web/src/ffmpeg",
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test epi cleanup by package name",
+      "type": "shell",
+      "options": {
+        "env": {}
+      },
+      "command": "\"${workspaceRoot}/tasks/epi/tasks.sh\"",
+      "args": [
+        "cleanup",
+        "--pkg",
+        "${input:pickEpiPkg}",
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test epi cleanup by directory",
+      "type": "shell",
+      "options": {
+        "env": {}
+      },
+      "command": "\"${workspaceRoot}/tasks/epi/tasks.sh\"",
+      "args": [
+        "cleanup",
+        "--pkg-source-dir",
+        "$HOME/sources/epiphan/trunk/vga2web/subsys/grid",
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test epi upload by package name",
+      "type": "shell",
+      "options": {
+        "env": {}
+      },
+      "command": "\"${workspaceRoot}/tasks/epi/tasks.sh\"",
+      "args": [
+        "upload",
+        "--pkg",
+        "${input:pickEpiPkg}",
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test epi upload by directory",
+      "type": "shell",
+      "options": {
+        "env": {}
+      },
+      "command": "\"${workspaceRoot}/tasks/epi/tasks.sh\"",
+      "args": [
+        "upload",
+        "--pkg-source-dir",
+        "$HOME/sources/epiphan/trunk/vga2web/subsys/grid",
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test Nimble Streamer Docker",
+      "type": "shell",
+      "options": {
+        "env": {},
+        "cwd": "${workspaceRoot}/tasks/nimble"
+      },
+      "command": "docker",
+      "args": [
+        "build",
+        "-f",
+        "Dockerfile",
+        "-t",
+        "epi-nimble-streamer",
+        "."
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Attach shell to Nimble Streamer Docker",
+      "type": "shell",
+      "options": {
+        "env": {},
+        "cwd": "${workspaceRoot}/tasks/nimble"
+      },
+      "command": "docker",
+      "args": [
+        "exec",
+        "-it",
+        "epi-nimble-streamer",
+        "/bin/sh",
+        "-c",
+        "[ -e /bin/bash ] && /bin/bash || /bin/sh"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Nimble Streamer Docker container",
+      "type": "shell",
+      "options": {
+        "env": {},
+        "cwd": "${workspaceRoot}/tasks/nimble"
+      },
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-d",
+        "-p",
+        "14009:14009/udp",
+        "-p",
+        "14011:14011/udp",
+        "-p",
+        "14003:14003/udp",
+        "--name",
+        "epi-nimble-streamer",
+        "epi-nimble-streamer"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Stop Nimble Streamer Docker container",
+      "type": "shell",
+      "options": {
+        "env": {},
+        "cwd": "${workspaceRoot}/tasks/nimble"
+      },
+      "command": "docker",
+      "args": [
+        "stop",
+        "epi-nimble-streamer"
+      ],
+      "group": "test",
+      "problemMatcher": []
     }
-   ],"inputs": [
-     {
-       "id":"pickProject",
-       "type": "command",
-       "command": "shellCommand.execute",
-       "args":{
-         "command":"projects=$(find \"$HOME/sources/epiphan/trunk/vga2web/subsys/\" -mindepth 1 -maxdepth 1 -type d -printf \"%f\\n\") && projects=$projects$(find \"$HOME/sources/epiphan/trunk/vga2web/src\" -mindepth 1 -maxdepth 1 -type d -printf \"%f\\n\") && (echo -e $projects|sort)"
-       }
-     }
-   ]
+  ],
+  "inputs": [
+    {
+      "id": "pickEpiPkg",
+      "type": "command",
+      "command": "shellCommand.execute",
+      "args": {
+        "command": "\"${workspaceFolder}/tasks/epi/tasks.sh\" list|sort"
+      }
+    }
+  ]
 }

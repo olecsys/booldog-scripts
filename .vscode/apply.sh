@@ -74,11 +74,11 @@ function main() {
         break
       }
     }
-    __funcmsg=$(cp "${__script_dir}/json.sh" "${booldog_scripts_directory}/" 2>&1) || {
+    __funcmsg=$(cp "${__script_dir}/../json.sh" "${booldog_scripts_directory}/" 2>&1) || {
       __funcmsg=${redbold}${__funcmsg}
       break
     }
-    __funcmsg=$(cp "${__script_dir}/network.sh" "${booldog_scripts_directory}/" 2>&1) || {
+    __funcmsg=$(cp "${__script_dir}/../network.sh" "${booldog_scripts_directory}/" 2>&1) || {
       __funcmsg=${redbold}${__funcmsg}
       break
     }
